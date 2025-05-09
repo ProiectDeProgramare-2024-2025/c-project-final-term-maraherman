@@ -23,6 +23,11 @@ typedef struct {
     int correctOption;
 } Question;
 
+typedef struct {
+    char name[50];
+    float score;
+} LeaderboardEntry;
+
 void initializeLeaderboard() {
     FILE *file = fopen("leaderboard.txt", "r");
     if (!file) {  
@@ -36,7 +41,7 @@ void initializeLeaderboard() {
     }
 }
 
-void loadQuestions(Question questions[]); // Forward declaration
+void loadQuestions(Question questions[]); 
 void useFiftyFifty(Question q, int *remainingOptions);
 
 void readUserName(char *name) {
@@ -44,7 +49,6 @@ void readUserName(char *name) {
     scanf("%s", name);
 }
 
-// Modified to return 1 if correct, 0 if wrong
 int askQuestion(Question q, int qNumber, float *score) {
     int choice, use5050;
     int remainingOptions[4] = {1, 1, 1, 1};
@@ -140,18 +144,49 @@ void viewLeaderboard() {
     if (!file) {
         printf("No scores recorded yet.\n");
     } else {
-        char name[50];
-        float score;
-        while (fscanf(file, "%s %f", name, &score) != EOF) {
-            printf(COLOR_YELLOW "%s" COLOR_RESET " - %.1f points\n", name, score);
+        LeaderboardEntry entries[100];
+        int count = 0;
+
+        
+        while (fscanf(file, "%s %f", entries[count].name, &entries[count].score) == 2) {
+            count++;
+            if (count >= 100) break;  
         }
         fclose(file);
+
+        if (count == 0) {
+            printf("No scores recorded yet.\n");
+        } else {
+            
+            for (int i = 0; i < count - 1; i++) {
+                for (int j = i + 1; j < count; j++) {
+                    if (entries[j].score > entries[i].score) {
+                        LeaderboardEntry temp = entries[i];
+                        entries[i] = entries[j];
+                        entries[j] = temp;
+                    }
+                }
+            }
+            file = fopen("leaderboard.txt", "w");
+            if (file) {
+                for (int i = 0; i < count; i++) {
+                    fprintf(file, "%s %.1f\n", entries[i].name, entries[i].score);
+                }
+                fclose(file);
+                printf("\nLeaderboard file has been sorted and saved.\n");
+            }
+
+            for (int i = 0; i < count; i++) {
+                printf(COLOR_YELLOW "%s" COLOR_RESET " - %.1f points\n", entries[i].name, entries[i].score);
+            }
+        }
     }
 
     printf("Press Enter to return to the main menu...\n");
     getchar();
     getchar();
 }
+
 
 void viewGameHistory() {
     clearScreen();
@@ -165,19 +200,34 @@ void viewGameHistory() {
     if (!file) {
         printf("No game history available.\n");
     } else {
-        int found = 0;
-        char name[50];
-        float score;
+        LeaderboardEntry entries[100];
+        int count = 0;
 
-        while (fscanf(file, "%s %f", name, &score) != EOF) {
-            if (strcmp(name, searchName) == 0) {
-                printf(COLOR_YELLOW "%s" COLOR_RESET " - %.1f points\n", name, score);
-                found = 1;
+        while (fscanf(file, "%s %f", entries[count].name, &entries[count].score) == 2) {
+            if (strcmp(entries[count].name, searchName) == 0) {
+                count++;
             }
         }
-
         fclose(file);
-        if (!found) printf(COLOR_RED "No records found for %s.\n" COLOR_RESET, searchName);
+
+        if (count == 0) {
+            printf(COLOR_RED "No records found for %s.\n" COLOR_RESET, searchName);
+        } else {
+            
+            for (int i = 0; i < count - 1; i++) {
+                for (int j = i + 1; j < count; j++) {
+                    if (entries[j].score > entries[i].score) {
+                        LeaderboardEntry temp = entries[i];
+                        entries[i] = entries[j];
+                        entries[j] = temp;
+                    }
+                }
+            }
+
+            for (int i = 0; i < count; i++) {
+                printf(COLOR_YELLOW "%s" COLOR_RESET " - %.1f points\n", entries[i].name, entries[i].score);
+            }
+        }
     }
 
     printf("Press Enter to return to the main menu...\n");
