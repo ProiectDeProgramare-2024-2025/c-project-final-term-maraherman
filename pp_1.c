@@ -44,9 +44,10 @@ void readUserName(char *name) {
     scanf("%s", name);
 }
 
-void askQuestion(Question q, int qNumber, int *score) {
+// Modified to return 1 if correct, 0 if wrong
+int askQuestion(Question q, int qNumber, float *score) {
     int choice, use5050;
-    int remainingOptions[4] = {1, 1, 1, 1}; 
+    int remainingOptions[4] = {1, 1, 1, 1};
 
     printf("\n" COLOR_YELLOW "Question %d: %s\n" COLOR_RESET, qNumber, q.question);
     for (int j = 0; j < 4; j++) {
@@ -80,11 +81,13 @@ void askQuestion(Question q, int qNumber, int *score) {
     if (choice - 1 == q.correctOption) {
         printf(COLOR_GREEN "Correct!\n" COLOR_RESET);
         *score += use5050 ? 0.5 : 1;
+        return 1;  // Continue playing
     } else {
         printf(COLOR_RED "Wrong! The correct answer was: %s\n" COLOR_RESET, q.options[q.correctOption]);
-        *score = -1; // End game signal
+        return 0;  // End game
     }
 }
+
 
 void startGame() {
     clearScreen();
@@ -97,13 +100,16 @@ void startGame() {
     readUserName(name);
 
     for (int i = 0; i < 15; i++) {
-        askQuestion(questions[i], i + 1, &score);
-        if (score == -1) break;
+        int keepPlaying = askQuestion(questions[i], i + 1, &score);
+        if (!keepPlaying) {
+            printf(COLOR_RED "\nGame over! You answered incorrectly.\n" COLOR_RESET);
+            break;
+        }
     }
 
     FILE *leaderboard = fopen("leaderboard.txt", "a");
     if (leaderboard) {
-        fprintf(leaderboard, "%s %.1f\n", name, score < 0 ? 0 : score);
+        fprintf(leaderboard, "%s %.1f\n", name, score);
         fclose(leaderboard);
     }
 
@@ -115,12 +121,12 @@ void startGame() {
 
         fprintf(output, "˗ˏˋ ★ ˎˊ˗ Game Session Summary ˗ˏˋ ★ ˎˊ˗\n");
         fprintf(output, "Player Name:「 ✦ %s ✦ 」\n", name);
-        fprintf(output, "Final Score: %.1f\n", score < 0 ? 0 : score);
+        fprintf(output, "Final Score: %.1f\n", score);
         fprintf(output, "Date & Time: %s\n", timestamp);
         fclose(output);
     }
 
-    printf("\n" COLOR_YELLOW "Game over! Your final score: %.1f\n" COLOR_RESET, score < 0 ? 0 : score);
+    printf("\n" COLOR_YELLOW "Your final score: %.1f\n" COLOR_RESET, score);
     printf("Press Enter to return to the main menu...\n");
     getchar();
     getchar();
